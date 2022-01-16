@@ -51,7 +51,7 @@ is 25.
 -}
 -- DON'T FORGET TO SPECIFY THE TYPE IN HERE
 sumOfSquares :: Num a => a -> a -> a
-sumOfSquares x y = x^2 + y^2
+sumOfSquares x y = x*x + y*y -- x^2 + y^2 wouldn't compile?
 
 {- | Implement a function that returns the last digit of a given number.
 
@@ -104,16 +104,16 @@ start position can be considered as zero (e.g. substring from the
 first character) and negative end position should result in an empty
 string.
 -}
-subString :: Int -> Int -> [Char] -> [Char]
+subString :: Int -> Int -> String -> String
 subString start end str
-  | start > end = error "start shan't be greater than end"
+  | start > end = ""
   | end < 0     = ""
   | otherwise   =
     let
-      posStart = max 0 start {- per spec -}
+      adjStart = max 0 start {- per spec -}
+      -- adjEnd = if adjStart == end then end+1 else end  -- compensating +1 TODO
     in
-      reverse (take (end - posStart) (reverse (take end str))) {- drop instead of reverse would be more efficient -}
-      
+      take (end - adjStart + 1) (drop adjStart str) {- +1 for inclusive end -}
 
 {- | Write a function that takes a String — space separated numbers,
 and finds a sum of the numbers inside this string.
@@ -144,10 +144,38 @@ and lower than 6 elements (4, 5, 6, 7, 8 and 9).
 
 🕯 HINT: Use recursion to implement this function.
 -}
-lowerAndGreater :: (Num a, Ord a) => a -> [a] -> String
-lowerAndGreater n list
-  | 0 > n = "test"
-  | null list = "2"
-  | otherwise = "other"
-{- why recursion and not let in? -}
+lowerAndGreater :: (Num a, Ord a, Show a) => a -> [a] -> String
+lowerAndGreater n list =
+  (show n) ++ " is greater than " ++ (show greater) ++
+  " elements and lower than " ++ (show lower) ++ " elements"
+  where
+    accumulator :: (Num a, Ord a) => a -> a -> a -> [a] -> (a, a)
+    accumulator greater lower n [] = (greater, lower)
+    accumulator greater lower n list
+      | n > head list = accumulator (greater+1) lower n (tail list)
+      | n < head list = accumulator greater (lower+1) n (tail list)
+      | otherwise = accumulator (greater) lower n (tail list)
+    (greater, lower) = accumulator 0 0 n list
+  
+                         {-
+  where
+    greater = ?
+    lower = ?
+-}
+  
+{- use recursion to impl the two accumulators? hmm...eg acc numLower numGreater list -}
+  
+
+{-
+  | null list = ""
+  | otherwise =
+    
+     let lowerThan = map (< n) list 
+        greaterThan = lowerAndGreater ? ?
+    in "3 is greater than 2 elements and lower than 6 elements"
+-}
+  
+                
+    
+{- why recursion? -}
 
