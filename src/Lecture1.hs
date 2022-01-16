@@ -133,7 +133,7 @@ strSum str =
      upon space, append buffer to result list. should handle floating points that way. -}
   let nums = map read (words str) :: [Integer] {- or just use words I guess -}
   in foldr (+) 0 nums
-  {- or use list comprehension isntead of let/in  -}
+  {- or use list comprehension instead of let/in  -}
 
 {- | Write a function that takes a number and a list of numbers and
 returns a string, saying how many elements of the list are strictly
@@ -153,12 +153,13 @@ lowerAndGreater n list =
   (show n) ++ " is greater than " ++ (show greater) ++
   " elements and lower than " ++ (show lower) ++ " elements"
   where
+    -- this recurses through the list, incrementing # nums greater + lower
     accumulator :: (Num a, Ord a) => a -> a -> a -> [a] -> (a, a)
-    accumulator greater lower n [] = (greater, lower)
-    accumulator greater lower n list
-      | n > head list = accumulator (greater+1) lower n (tail list)
-      | n < head list = accumulator greater (lower+1) n (tail list)
-      | otherwise = accumulator (greater) lower n (tail list)
+    accumulator numGr numLw _ [] = (numGr, numLw)
+    accumulator numGr numLw targNum theList
+      | targNum > head theList = accumulator (numGr+1) numLw targNum (tail theList)
+      | targNum < head theList = accumulator numGr (numLw+1) targNum (tail theList)
+      | otherwise = accumulator (numGr) numLw targNum (tail theList)
     (greater, lower) = accumulator 0 0 n list
   
                          {-
