@@ -33,6 +33,7 @@ module Lecture1
 
 {- | Specify the type signature of the following function. Think about
 its behaviour, possible types for the function arguments and write the
+type signature explicitly.
 -}
 makeSnippet :: Int -> [Char] -> [Char]
 makeSnippet limit text = take limit ("Description: " ++ text) ++ "..."
@@ -60,6 +61,7 @@ sumOfSquares x y = x*x + y*y -- x^2 + y^2 wouldn't compile?
 >>> lastDigit (-17)
 7
 
+HINT: use the @mod@ function
 
 -}
 -- DON'T FORGET TO SPECIFY THE TYPE IN HERE
@@ -111,7 +113,6 @@ subString start end str
   | otherwise   =
     let
       adjStart = max 0 start {- per spec -}
-      -- adjEnd = if adjStart == end then end+1 else end  -- compensating +1 TODO
     in
       take (end - adjStart + 1) (drop adjStart str) {- +1 for inclusive end -}
 
@@ -157,26 +158,3 @@ lowerAndGreater n list =
       | targNum < head theList = accumulator numGr (numLw+1) targNum (tail theList)
       | otherwise = accumulator (numGr) numLw targNum (tail theList)
     (greater, lower) = accumulator 0 0 n list
-  
-                         {-
-  where
-    greater = ?
-    lower = ?
--}
-  
-{- use recursion to impl the two accumulators? hmm...eg acc numLower numGreater list -}
-  
-
-{-
-  | null list = ""
-  | otherwise =
-    
-     let lowerThan = map (< n) list 
-        greaterThan = lowerAndGreater ? ?
-    in "3 is greater than 2 elements and lower than 6 elements"
--}
-  
-                
-    
-{- why recursion? -}
-
