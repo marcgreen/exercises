@@ -40,6 +40,10 @@ module Lecture2
     , constantFolding
     ) where
 
+import Data.Char
+import Numeric.Natural (Natural)
+
+
 {- | Implement a function that finds a product of all the numbers in
 the list. But implement a lazier version of this function: if you see
 zero, you can stop calculating product and return 0 immediately.
@@ -110,7 +114,7 @@ spaces.
 🕯 HINT: look into Data.Char and Prelude modules for functions you may use.
 -}
 dropSpaces :: String -> String
-dropSpaces = error "TODO"
+dropSpaces = takeWhile (not . isSpace) . dropWhile isSpace
 
 {- |
 
@@ -168,12 +172,67 @@ You're free to define any helper functions.
 
 -- some help in the beginning ;)
 data Knight = Knight
-    { knightHealth    :: Int
-    , knightAttack    :: Int
-    , knightEndurance :: Int
-    }
+  { knightHealth    :: Int
+  , knightAttack    :: Int
+  , knightEndurance :: Int
+  }
 
-dragonFight = error "TODO"
+knightTurn :: (Knight, Dragon) -> (Knight, Dragon)
+knightTurn (knight, dragon) =
+  (knight {knightEndurance = (knightEndurance knight) - 1}
+  ,dragon {dragonHealth = (dragonHealth dragon) - (knightAttack knight)})
+
+data Treasure = Treasure
+data Chest = Chest
+  { chestGold     :: Natural
+  , chestTreasure :: Maybe Treasure
+  }
+
+data DragonType = Red | Black | Green
+
+getRandomGoldAmount :: Natural
+getRandomGoldAmount = 4 -- todo, randomize
+
+getDragonReward :: DragonType -> DragonFightResult
+getDragonReward Green = Reward (Chest getRandomGoldAmount Nothing) 250
+getDragonReward Red = Reward (Chest getRandomGoldAmount (Just Treasure)) 100
+getDragonReward Black = Reward (Chest getRandomGoldAmount (Just Treasure)) 150
+
+data Dragon = Dragon
+  { dragonHealth    :: Int
+  , dragonType      :: DragonType
+  , dragonAttack    :: Int
+  }
+
+dragonTurn :: Int -> (Knight, Dragon) -> (Knight, Dragon)
+dragonTurn turnNumber (knight, dragon)
+  | turnNumber == 10 =
+      (knight {knightHealth = (knightHealth knight) - (dragonAttack dragon)}
+      ,dragon)
+  | otherwise = (knight, dragon)
+
+-- what happens if knight and dragon kill each other simultaneously?
+-- I want to assume the guards are parsed in order, so Reward is recognized only if first
+-- two aren't true.
+doRound :: Int -> (Knight, Dragon) -> DragonFightResult
+doRound roundNum (knight, dragon)
+  | knightHealth knight    <= 0 = Death
+  | knightEndurance knight <= 0 = Retreat
+  | dragonHealth dragon    <= 0 = (getDragonReward (dragonType dragon))
+  | otherwise = 
+      doRound (roundNum + 1) (dragonTurn (roundNum + 1) (knightTurn (knight, dragon)))
+
+data DragonFightResult = Death
+                       | Retreat
+                       | Reward
+                         { chest :: Chest
+                         , gold  :: Natural -- assuming not-negative, too
+                         }
+  
+dragonFight :: Knight -> Dragon -> DragonFightResult
+dragonFight knight dragon = doRound 0 (knight, dragon)
+
+-- todo test the function. dragonFight                                   
 
 ----------------------------------------------------------------------------
 -- Challenges
@@ -195,6 +254,8 @@ True
 -}
 isIncreasing :: [Int] -> Bool
 isIncreasing = error "TODO"
+-- 1 approach: pattern match in chunks of 2, special case 0 and 1
+-- is there a simpler way
 
 {- | Implement a function that takes two lists, sorted in the
 increasing order, and merges them into new list, also sorted in the
