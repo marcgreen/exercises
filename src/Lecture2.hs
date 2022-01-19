@@ -47,6 +47,8 @@ module Lecture2
 
 import Data.Char
 import Numeric.Natural (Natural)
+import Data.Maybe
+import Data.Either
 
 {- | Implement a function that finds a product of all the numbers in
 the list. But implement a lazier version of this function: if you see
@@ -260,9 +262,10 @@ False
 True
 -}
 isIncreasing :: [Int] -> Bool
-isIncreasing = error "TODO"
--- 1 approach: pattern match in chunks of 2, special case 0 and 1
--- is there a simpler way
+isIncreasing [] = True
+isIncreasing (_:[]) = True
+isIncreasing (a:b:list) = a <= b && isIncreasing list
+                       -- a <  b passed test cases, but shouldn't've I think
 
 {- | Implement a function that takes two lists, sorted in the
 increasing order, and merges them into new list, also sorted in the
@@ -275,7 +278,11 @@ verify that.
 [1,2,3,4,7]
 -}
 merge :: [Int] -> [Int] -> [Int]
-merge = error "TODO"
+merge l1 [] = l1
+merge [] l2 = l2
+merge (x:xs) (y:ys)
+  | x < y     = x : merge xs (y:ys)
+  | otherwise = y : merge (x:xs) ys
 
 {- | Implement the "Merge Sort" algorithm in Haskell. The @mergeSort@
 function takes a list of numbers and returns a new list containing the
@@ -292,7 +299,11 @@ The algorithm of merge sort is the following:
 [1,2,3]
 -}
 mergeSort :: [Int] -> [Int]
-mergeSort = error "TODO"
+mergeSort [] = []
+mergeSort (x:[]) = [x]
+mergeSort list = merge (mergeSort half1) (mergeSort half2)
+  where
+    (half1, half2) = splitAt (div (length list) 2) list
 
 
 {- | Haskell is famous for being a superb language for implementing
@@ -345,8 +356,25 @@ data EvalError
 It returns either a successful evaluation result or an error.
 -}
 eval :: Variables -> Expr -> Either EvalError Int
-eval = error "TODO"
-
+eval _ (Lit i) = Right i
+eval vars (Var s) =
+  let
+    val = lookup s vars
+  in
+    if isJust val
+    then Right (fromJust val)
+    else Left (VariableNotFound s)
+eval vars (Add e1 e2) =
+  let
+    a = (eval vars e1)
+    b = (eval vars e2)
+  in -- the following feels more verbose than necessary. how to simplify?
+    if isLeft a 
+    then a
+    else if isLeft b
+         then b
+         else Right (fromRight 0 a + fromRight 0 b)
+              
 {- | Compilers also perform optimizations! One of the most common
 optimizations is "Constant Folding". It performs arithmetic operations
 on all constants known during compile time. This way you can write
@@ -369,4 +397,52 @@ Write a function that takes and expression and performs "Constant
 Folding" optimization on the given expression.
 -}
 constantFolding :: Expr -> Expr
-constantFolding = error "TODO"
+constantFolding (Lit e) = (Lit e)
+constantFolding (Var e) = (Var e)
+--constantFolding (Add e1 (Lit 0)) = e1
+--constantFolding (Add (Lit 0) e2) = e2
+constantFolding (Add e1 e2) =
+  let
+    (c1, r1) = extractConstants e1
+    (c2, r2) = extractConstants e2
+    c = sum (catMaybes [c1, c2])
+  in
+    if isNothing r1 && isNothing r2
+    then Lit c
+    else if isNothing r1 && isJust r2
+         then Add (Lit c) (fromJust r2)
+         else Add (Lit c) (Add (fromJust r1) (fromJust r2))
+
+
+extractConstants :: Expr -> (Maybe Int, Maybe Expr)
+extractConstants (Lit e) = (Just e, Nothing)
+extractConstants (Var e) = (Nothing, Just (Var e))
+extractConstants (Add e1 e2) =
+  let
+    (c1, r1) = extractConstants e1
+    (c2, r2) = extractConstants e2
+    c = sum (catMaybes [c1, c2])
+  in
+    if isNothing r1 && isNothing r2
+    then (Just c, Nothing)
+    else if isNothing r1 && isJust r2
+         then
+           let
+             (c3, r3) = extractConstants (fromJust r2)
+             cc = sum (catMaybes [c3])
+           in
+             (Just (c+cc), r3)
+         else
+           let
+             (c3, r3) = extractConstants (fromJust r1)
+             (c4, r4) = extractConstants (fromJust r2)
+             cc = sum (catMaybes [c3, c4])
+           in
+             (Just (c+cc), Just (Add (fromJust r3) (fromJust r4)))
+{-    
+    if isNothing r1
+    then (Just c, r2)
+    else if isNothing r2
+         then (Just c, r1)
+         else (Just c, (Just (Add (fromJust r1) (fromJust r2))))
+-}
