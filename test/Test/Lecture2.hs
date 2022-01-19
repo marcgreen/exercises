@@ -11,6 +11,8 @@ import Test.Hspec (Expectation, Spec, describe, it, shouldBe, shouldSatisfy)
 import Test.Hspec.Hedgehog (assert, forAll, hedgehog, (===))
 
 import Lecture2 (EvalError (..), Expr (..), constantFolding, dropSpaces, duplicate, eval, evenLists,
+                 dragonFight, Dragon (..), Knight (..), DragonType (..), Treasure (..),
+                 Chest (..), DragonFightResult (..),
                  isIncreasing, lazyProduct, merge, mergeSort, removeAt)
 
 import qualified Hedgehog.Gen as Gen
@@ -81,6 +83,23 @@ lecture2Normal = describe "Normal" $ do
         it "Both sides"     $ dropSpaces "   hi   " `shouldBe` "hi"
         it "Single space"   $ dropSpaces " 500 "    `shouldBe` "500"
         it "Infinite space" $ dropSpaces (" infinity" ++ repeat ' ') `shouldBe` "infinity"
+
+    describe "dragonFight" $ let
+        knight1 = (Knight 5 1 2) -- hp atk endur
+        knight2 = (Knight 5 100 2) -- hp atk endur
+        knight3 = (Knight 5 1 11) -- hp atk endur
+        dragon1 = (Dragon 3 Black 10) -- hp type atk
+        dragonGreen = (Dragon 100 Green 10) -- hp type atk
+      in do
+        it "tired knight" $ dragonFight knight1 dragon1 `shouldBe` Retreat
+        it "strong knight" $ dragonFight knight2 dragon1 `shouldBe`
+          (Reward (Chest 4 (Just Treasure)) 150)
+        it "green dragon" $ dragonFight knight2 dragonGreen `shouldBe`
+          (Reward (Chest 4 Nothing) 250)
+        it "dead knight" $ dragonFight knight3 dragonGreen `shouldBe` Death
+    -- there're more cases to test but this feels good enough for now
+    -- eg, simultaneously death + kill, simul retreat + kill
+
 
 lecture2Hard :: Spec
 lecture2Hard = describe "Hard" $ do

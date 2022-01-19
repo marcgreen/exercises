@@ -26,6 +26,11 @@ module Lecture2
     , dropSpaces
 
     , Knight (..)
+    , Dragon (..)
+    , DragonType (..)
+    , Treasure (..)
+    , Chest (..)
+    , DragonFightResult (..)
     , dragonFight
 
       -- * Hard
@@ -182,12 +187,15 @@ knightTurn (knight, dragon) =
   ,dragon {dragonHealth = (dragonHealth dragon) - (knightAttack knight)})
 
 data Treasure = Treasure
+  deriving (Show, Eq)
 data Chest = Chest
   { chestGold     :: Natural
   , chestTreasure :: Maybe Treasure
   }
+  deriving (Show, Eq)
 
 data DragonType = Red | Black | Green
+  deriving (Show, Eq)
 
 getRandomGoldAmount :: Natural
 getRandomGoldAmount = 4 -- todo, randomize
@@ -202,6 +210,7 @@ data Dragon = Dragon
   , dragonType      :: DragonType
   , dragonAttack    :: Int
   }
+  deriving (Show, Eq)
 
 dragonTurn :: Int -> (Knight, Dragon) -> (Knight, Dragon)
 dragonTurn turnNumber (knight, dragon)
@@ -225,13 +234,12 @@ data DragonFightResult = Death
                        | Retreat
                        | Reward
                          { chest :: Chest
-                         , gold  :: Natural -- assuming not-negative, too
+                         , exp  :: Natural -- assuming like gold
                          }
+  deriving (Show, Eq) 
   
 dragonFight :: Knight -> Dragon -> DragonFightResult
 dragonFight knight dragon = doRound 0 (knight, dragon)
-
--- todo test the function. dragonFight                                   
 
 ----------------------------------------------------------------------------
 -- Extra Challenges
