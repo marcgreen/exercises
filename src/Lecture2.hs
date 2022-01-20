@@ -397,23 +397,18 @@ Write a function that takes and expression and performs "Constant
 Folding" optimization on the given expression.
 -}
 constantFolding :: Expr -> Expr
-constantFolding (Lit e) = (Lit e)
-constantFolding (Var e) = (Var e)
---constantFolding (Add e1 (Lit 0)) = e1
---constantFolding (Add (Lit 0) e2) = e2
-constantFolding (Add e1 e2) =
+constantFolding e =
   let
-    (c1, r1) = extractConstants e1
-    (c2, r2) = extractConstants e2
-    c = sum (catMaybes [c1, c2])
-  in
-    if isNothing r1 && isNothing r2
-    then Lit c
-    else if isNothing r1 && isJust r2
-         then Add (Lit c) (fromJust r2)
-         else Add (Lit c) (Add (fromJust r1) (fromJust r2))
-
-
+    (c, r) = extractConstants e
+  in -- this if/else tree feels a bit wordy...
+    if isNothing c
+    then fromJust r
+    else if isNothing r
+         then Lit (fromJust c)
+         else if 0 == fromJust c
+              then fromJust r
+              else (Add (Lit (fromJust c)) (fromJust r))
+                   
 extractConstants :: Expr -> (Maybe Int, Maybe Expr)
 extractConstants (Lit e) = (Just e, Nothing)
 extractConstants (Var e) = (Nothing, Just (Var e))
@@ -421,28 +416,12 @@ extractConstants (Add e1 e2) =
   let
     (c1, r1) = extractConstants e1
     (c2, r2) = extractConstants e2
-    c = sum (catMaybes [c1, c2])
-  in
+    c = sum (catMaybes [c1, c2]) -- 0 if both Nothing?
+  in -- this if/else tree also feels a bit wordy
     if isNothing r1 && isNothing r2
     then (Just c, Nothing)
     else if isNothing r1 && isJust r2
-         then
-           let
-             (c3, r3) = extractConstants (fromJust r2)
-             cc = sum (catMaybes [c3])
-           in
-             (Just (c+cc), r3)
-         else
-           let
-             (c3, r3) = extractConstants (fromJust r1)
-             (c4, r4) = extractConstants (fromJust r2)
-             cc = sum (catMaybes [c3, c4])
-           in
-             (Just (c+cc), Just (Add (fromJust r3) (fromJust r4)))
-{-    
-    if isNothing r1
-    then (Just c, r2)
-    else if isNothing r2
-         then (Just c, r1)
-         else (Just c, (Just (Add (fromJust r1) (fromJust r2))))
--}
+         then (Just c, r2)
+         else if isJust r1 && isNothing r2
+              then (Just c, r1)
+              else (Just c, Just (Add (fromJust r1) (fromJust r2)))
