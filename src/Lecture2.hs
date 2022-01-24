@@ -266,9 +266,10 @@ True
 -}
 isIncreasing :: [Int] -> Bool
 isIncreasing [] = True
-isIncreasing [_] = True
-isIncreasing (a:b:list) = a <= b && isIncreasing list
-                       -- a <  b passed test cases, but shouldn't've I think
+isIncreasing (x:xs) 
+  | null xs   = True
+  | otherwise = (x <= head xs) && isIncreasing xs
+                 -- note, not: `... (tail xs)`, in case last element decreases
 
 {- | Implement a function that takes two lists, sorted in the
 increasing order, and merges them into new list, also sorted in the

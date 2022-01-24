@@ -119,6 +119,8 @@ lecture2Hard = describe "Hard" $ do
             xs <- forAll $ Gen.list (Range.linear 0 10) (Gen.int Range.linearBounded)
             assert $ isIncreasing (sort xs)
 
+        it "last element decreasing" $ isIncreasing [1, 2, 1] `shouldBe` False
+
     describe "merge" $ do
         it "Two empty" $ merge [] [] `shouldBe` []
         it "Left empty" $ merge [] [1, 2] `shouldBe` [1, 2]
