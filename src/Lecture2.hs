@@ -26,6 +26,11 @@ module Lecture2
     , dropSpaces
 
     , Knight (..)
+    , Dragon (..)
+    , DragonType (..)
+    , Treasure (..)
+    , Chest (..)
+    , DragonFightResult (..)
     , dragonFight
 
       -- * Hard
@@ -40,6 +45,11 @@ module Lecture2
     , constantFolding
     ) where
 
+import Data.Char
+import Numeric.Natural (Natural)
+import Data.Maybe
+import Data.Either
+
 {- | Implement a function that finds a product of all the numbers in
 the list. But implement a lazier version of this function: if you see
 zero, you can stop calculating product and return 0 immediately.
@@ -48,7 +58,11 @@ zero, you can stop calculating product and return 0 immediately.
 84
 -}
 lazyProduct :: [Int] -> Int
-lazyProduct = error "TODO"
+lazyProduct [] = 1
+lazyProduct (x : xs) = case x of
+  0 -> 0
+  _ -> x * lazyProduct(xs) 
+  
 
 {- | Implement a function that duplicates every element in the list.
 
@@ -58,7 +72,8 @@ lazyProduct = error "TODO"
 "ccaabb"
 -}
 duplicate :: [a] -> [a]
-duplicate = error "TODO"
+duplicate [] = []
+duplicate (x:xs) = [x,x] ++ duplicate(xs)
 
 {- | Implement function that takes index and a list and removes the
 element at the given position. Additionally, this function should also
@@ -70,7 +85,13 @@ return the removed element.
 >>> removeAt 10 [1 .. 5]
 (Nothing,[1,2,3,4,5])
 -}
-removeAt = error "TODO"
+removeAt :: Int -> [a] -> (Maybe a, [a])
+removeAt _ [] = (Nothing, [])
+removeAt index (x:xs)
+  | index == 0 = (Just x, xs)
+  | otherwise  = let (e , t) = removeAt (index - 1) xs
+    in (e, x:t)
+-- oh, xs !! index
 
 {- | Write a function that takes a list of lists and returns only
 lists of even lengths.
@@ -81,7 +102,8 @@ lists of even lengths.
 ♫ NOTE: Use eta-reduction and function composition (the dot (.) operator)
   in this function.
 -}
-evenLists = error "TODO"
+evenLists :: [[a]] -> [[a]]
+evenLists = filter (even . length)
 
 {- | The @dropSpaces@ function takes a string containing a single word
 or number surrounded by spaces and removes all leading and trailing
@@ -97,7 +119,8 @@ spaces.
 
 🕯 HINT: look into Data.Char and Prelude modules for functions you may use.
 -}
-dropSpaces = error "TODO"
+dropSpaces :: String -> String
+dropSpaces = takeWhile (not . isSpace) . dropWhile isSpace
 
 {- |
 
@@ -155,12 +178,70 @@ You're free to define any helper functions.
 
 -- some help in the beginning ;)
 data Knight = Knight
-    { knightHealth    :: Int
-    , knightAttack    :: Int
-    , knightEndurance :: Int
-    }
+  { knightHealth    :: Int
+  , knightAttack    :: Int
+  , knightEndurance :: Int
+  }
 
-dragonFight = error "TODO"
+knightTurn :: (Knight, Dragon) -> (Knight, Dragon)
+knightTurn (knight, dragon) =
+  (knight {knightEndurance = (knightEndurance knight) - 1}
+  ,dragon {dragonHealth = (dragonHealth dragon) - (knightAttack knight)})
+
+data Treasure = Treasure
+  deriving (Show, Eq)
+data Chest = Chest
+  { chestGold     :: Natural
+  , chestTreasure :: Maybe Treasure
+  }
+  deriving (Show, Eq)
+
+data DragonType = Red | Black | Green
+  deriving (Show, Eq)
+
+getRandomGoldAmount :: Natural
+getRandomGoldAmount = 4 -- todo, randomize
+
+getDragonReward :: DragonType -> DragonFightResult
+getDragonReward Green = Reward (Chest getRandomGoldAmount Nothing) 250
+getDragonReward Red = Reward (Chest getRandomGoldAmount (Just Treasure)) 100
+getDragonReward Black = Reward (Chest getRandomGoldAmount (Just Treasure)) 150
+
+data Dragon = Dragon
+  { dragonHealth    :: Int
+  , dragonType      :: DragonType
+  , dragonAttack    :: Int
+  }
+  deriving (Show, Eq)
+
+dragonTurn :: Int -> (Knight, Dragon) -> (Knight, Dragon)
+dragonTurn turnNumber (knight, dragon)
+  | turnNumber == 10 =
+      (knight {knightHealth = (knightHealth knight) - (dragonAttack dragon)}
+      ,dragon)
+  | otherwise = (knight, dragon)
+
+-- what happens if knight and dragon kill each other simultaneously?
+-- I want to assume the guards are parsed in order, so Reward is recognized only if first
+-- two aren't true.
+doRound :: Int -> (Knight, Dragon) -> DragonFightResult
+doRound roundNum (knight, dragon)
+  | knightHealth knight    <= 0 = Death
+  | knightEndurance knight <= 0 = Retreat
+  | dragonHealth dragon    <= 0 = (getDragonReward (dragonType dragon))
+  | otherwise = 
+      doRound (roundNum + 1) (dragonTurn (roundNum + 1) (knightTurn (knight, dragon)))
+
+data DragonFightResult = Death
+                       | Retreat
+                       | Reward
+                         { chest :: Chest
+                         , exp  :: Natural -- assuming like gold
+                         }
+  deriving (Show, Eq) 
+  
+dragonFight :: Knight -> Dragon -> DragonFightResult
+dragonFight = doRound 0
 
 ----------------------------------------------------------------------------
 -- Challenges
@@ -181,7 +262,10 @@ False
 True
 -}
 isIncreasing :: [Int] -> Bool
-isIncreasing = error "TODO"
+isIncreasing [] = True
+isIncreasing [_] = True
+isIncreasing (a:b:list) = a <= b && isIncreasing list
+                       -- a <  b passed test cases, but shouldn't've I think
 
 {- | Implement a function that takes two lists, sorted in the
 increasing order, and merges them into new list, also sorted in the
@@ -194,7 +278,11 @@ verify that.
 [1,2,3,4,7]
 -}
 merge :: [Int] -> [Int] -> [Int]
-merge = error "TODO"
+merge l1 [] = l1
+merge [] l2 = l2
+merge (x:xs) (y:ys)
+  | x < y     = x : merge xs (y:ys)
+  | otherwise = y : merge (x:xs) ys
 
 {- | Implement the "Merge Sort" algorithm in Haskell. The @mergeSort@
 function takes a list of numbers and returns a new list containing the
@@ -211,7 +299,11 @@ The algorithm of merge sort is the following:
 [1,2,3]
 -}
 mergeSort :: [Int] -> [Int]
-mergeSort = error "TODO"
+mergeSort [] = []
+mergeSort (x:[]) = [x]
+mergeSort list = merge (mergeSort half1) (mergeSort half2)
+  where
+    (half1, half2) = splitAt (div (length list) 2) list
 
 
 {- | Haskell is famous for being a superb language for implementing
@@ -264,8 +356,25 @@ data EvalError
 It returns either a successful evaluation result or an error.
 -}
 eval :: Variables -> Expr -> Either EvalError Int
-eval = error "TODO"
-
+eval _ (Lit i) = Right i
+eval vars (Var s) =
+  let
+    val = lookup s vars
+  in
+    case val of
+        Nothing -> Left (VariableNotFound x)
+        Just n  -> Right n
+eval vars (Add e1 e2) =
+  let
+    a = (eval vars e1)
+    b = (eval vars e2)
+  in -- the following feels more verbose than necessary. how to simplify?
+    if isLeft a 
+    then a
+    else if isLeft b
+         then b
+         else Right (fromRight 0 a + fromRight 0 b)
+              
 {- | Compilers also perform optimizations! One of the most common
 optimizations is "Constant Folding". It performs arithmetic operations
 on all constants known during compile time. This way you can write
@@ -288,4 +397,31 @@ Write a function that takes and expression and performs "Constant
 Folding" optimization on the given expression.
 -}
 constantFolding :: Expr -> Expr
-constantFolding = error "TODO"
+constantFolding e =
+  let
+    (c, r) = extractConstants e
+  in -- this if/else tree feels a bit wordy...
+    if isNothing c
+    then fromJust r
+    else if isNothing r
+         then Lit (fromJust c)
+         else if 0 == fromJust c
+              then fromJust r
+              else (Add (Lit (fromJust c)) (fromJust r))
+                   
+extractConstants :: Expr -> (Maybe Int, Maybe Expr)
+extractConstants (Lit e) = (Just e, Nothing)
+extractConstants (Var e) = (Nothing, Just (Var e))
+extractConstants (Add e1 e2) =
+  let
+    (c1, r1) = extractConstants e1
+    (c2, r2) = extractConstants e2
+    c = sum (catMaybes [c1, c2]) -- 0 if both Nothing?
+  in -- this if/else tree also feels a bit wordy
+    if isNothing r1 && isNothing r2
+    then (Just c, Nothing)
+    else if isNothing r1 && isJust r2
+         then (Just c, r2)
+         else if isJust r1 && isNothing r2
+              then (Just c, r1)
+              else (Just c, Just (Add (fromJust r1) (fromJust r2)))
