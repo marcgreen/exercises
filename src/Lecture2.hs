@@ -224,13 +224,16 @@ dragonTurn turnNumber (knight, dragon)
 -- what happens if knight and dragon kill each other simultaneously?
 -- I want to assume the guards are parsed in order, so Reward is recognized only if first
 -- two aren't true.
-doRound :: Int -> (Knight, Dragon) -> DragonFightResult
-doRound roundNum (knight, dragon)
+doRound :: Int -> Knight -> Dragon -> DragonFightResult
+doRound roundNum knight dragon
   | knightHealth knight    <= 0 = Death
   | knightEndurance knight <= 0 = Retreat
   | dragonHealth dragon    <= 0 = (getDragonReward (dragonType dragon))
-  | otherwise = 
-      doRound (roundNum + 1) (dragonTurn (roundNum + 1) (knightTurn (knight, dragon)))
+  | otherwise =
+    let
+      (k, d) = (dragonTurn (roundNum + 1) (knightTurn (knight, dragon)))
+    in
+      doRound (roundNum + 1) k d
 
 data DragonFightResult = Death
                        | Retreat
@@ -362,7 +365,7 @@ eval vars (Var s) =
     val = lookup s vars
   in
     case val of
-        Nothing -> Left (VariableNotFound x)
+        Nothing -> Left (VariableNotFound s)
         Just n  -> Right n
 eval vars (Add e1 e2) =
   let
