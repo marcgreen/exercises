@@ -241,7 +241,7 @@ data DragonFightResult = Death
   deriving (Show, Eq) 
   
 dragonFight :: Knight -> Dragon -> DragonFightResult
-dragonFight knight dragon = doRound 0 (knight, dragon)
+dragonFight = doRound 0
 
 ----------------------------------------------------------------------------
 -- Extra Challenges
@@ -263,7 +263,7 @@ True
 -}
 isIncreasing :: [Int] -> Bool
 isIncreasing [] = True
-isIncreasing (_:[]) = True
+isIncreasing [_] = True
 isIncreasing (a:b:list) = a <= b && isIncreasing list
                        -- a <  b passed test cases, but shouldn't've I think
 
@@ -361,9 +361,9 @@ eval vars (Var s) =
   let
     val = lookup s vars
   in
-    if isJust val
-    then Right (fromJust val)
-    else Left (VariableNotFound s)
+    case val of
+        Nothing -> Left (VariableNotFound x)
+        Just n  -> Right n
 eval vars (Add e1 e2) =
   let
     a = (eval vars e1)
