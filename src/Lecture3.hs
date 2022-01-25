@@ -52,7 +52,7 @@ data Weekday
     | Friday
     | Saturday
     | Sunday
-    deriving (Show, Eq, Enum, Bounded)
+    deriving (Show, Eq)
 
 {- | Write a function that will display only the first three letters
 of a weekday.
@@ -60,6 +60,7 @@ of a weekday.
 >>> toShortString Monday
 "Mon"
 -}
+
 toShortString :: Weekday -> String
 toShortString e = take 3 $ show e
 -- toShortString Monday = "Mon"
