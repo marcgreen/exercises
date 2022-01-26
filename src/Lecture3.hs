@@ -1,4 +1,4 @@
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE InstanceSigs, ScopedTypeVariables #-}
 
 {- |
 Module                  : Lecture3
@@ -65,6 +65,7 @@ toShortString Thursday = "Thu"
 toShortString Friday = "Fri"
 toShortString Saturday = "Sat"
 toShortString Sunday = "Sun"
+-- not sure if this was the intent of this exercise?
 
 {- | Write a function that returns next day of the week, following the
 given day.
@@ -86,7 +87,7 @@ Tuesday
   would work for **any** enumeration type in Haskell (e.g. 'Bool',
   'Ordering') and not just 'Weekday'?
 -}
-next :: (Enum a, Bounded a) => a -> a
+next :: forall a. (Enum a, Bounded a) => a -> a
 next = toEnum . (`mod` max) . (+ 1) . fromEnum
   where max = 1 + fromEnum (maxBound :: a)
 -- next :: Weekday -> Weekday
@@ -101,7 +102,8 @@ weekday to the second.
 >>> daysTo Friday Wednesday
 5
 -}
-daysTo = error "TODO"
+daysTo :: Weekday -> Weekday -> Int
+daysTo firstDay secondDay = (fromEnum secondDay) - (fromEnum firstDay) `mod` (fromEnum (maxBound :: Weekday))
 
 {-
 
