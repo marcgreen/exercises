@@ -88,8 +88,8 @@ Tuesday
   'Ordering') and not just 'Weekday'?
 -}
 next :: forall a. (Enum a, Bounded a) => a -> a
-next = toEnum . (`mod` max) . (+ 1) . fromEnum
-  where max = 1 + fromEnum (maxBound :: a)
+next = toEnum . (`mod` size) . (+ 1) . fromEnum
+  where size = 1 + fromEnum (maxBound :: a)
 -- next :: Weekday -> Weekday
 -- next = toEnum . (`mod` max) . (+ 1) . fromEnum
 --   where max = 1 + fromEnum (maxBound :: Weekday)
@@ -103,7 +103,14 @@ weekday to the second.
 5
 -}
 daysTo :: Weekday -> Weekday -> Int
-daysTo firstDay secondDay = (fromEnum secondDay) - (fromEnum firstDay) `mod` (fromEnum (maxBound :: Weekday))
+daysTo firstDay secondDay =
+  let
+    size = (fromEnum (maxBound :: Weekday) + 1)
+    ringDistance = (fromEnum secondDay) - (fromEnum firstDay) `mod` size
+  in
+    if ringDistance < 0 -- if it's 1 day behind, it's actually 6 days ahead
+    then ringDistance + size
+    else ringDistance
 
 {-
 
@@ -119,9 +126,12 @@ newtype Gold = Gold
 
 -- | Addition of gold coins.
 instance Semigroup Gold where
-
+  (<>) :: Gold -> Gold -> Gold
+  (<>) a b = Gold (unGold a + unGold b)
 
 instance Monoid Gold where
+  mempty :: Gold 
+  mempty = Gold 0
 
 
 {- | A reward for completing a difficult quest says how much gold
@@ -136,9 +146,11 @@ data Reward = Reward
     } deriving (Show, Eq)
 
 instance Semigroup Reward where
-
-
+--  a <> b = Reward (rewardGold a <> rewardGold b) (rewardSpecial a || rewardSpecial b)
+  Reward a b <> Reward c d = Reward (a <> c) (b || d)
+  
 instance Monoid Reward where
+  mempty = Reward (Gold 0) False
 
 
 {- | 'List1' is a list that contains at least one element.
@@ -148,9 +160,22 @@ data List1 a = List1 a [a]
 
 -- | This should be list append.
 instance Semigroup (List1 a) where
-
+  List1 x xs <> List1 y ys = List1 x $ xs ++ y:ys
+  -- just learned about $. not sure if this is a good use of it.
+  -- feels weird to think about applying the left side to the right side in this case
+  -- bc it's part of a constructor
 
 {- | Does 'List1' have the 'Monoid' instance? If no then why?
+
+hmm, we would need to identify a neutral element of polymorphic type a for the given
+mappend function of list concat. it would need to be appendable to either side of
+an arbitrary value of type List1 and not change the value. given that List1 needs
+at least 1 element in it, then it seems contradictory to append it to another List1 value
+and expect the value not to change -> the result would be a list of longer length.
+
+maybe we could introduce some sentinel value that we agree to ignore if we see it?
+we would need to do this for every type a though. maybe if we change List1 to be of
+type Maybe a instead...
 
 instance Monoid (List1 a) where
 -}
@@ -170,11 +195,14 @@ monsters, you should get a combined treasure and not just the first
 🕯 HINT: You may need to add additional constraints to this instance
   declaration.
 -}
-instance Semigroup (Treasure a) where
+instance Semigroup z => Semigroup (Treasure z) where
+  NoTreasure <> NoTreasure = NoTreasure
+  NoTreasure <> SomeTreasure a = SomeTreasure a
+  SomeTreasure a <> NoTreasure = SomeTreasure a
+  SomeTreasure a <> SomeTreasure b = SomeTreasure (a <> b)
 
-
-instance Monoid (Treasure a) where
-
+instance Semigroup z => Monoid (Treasure z) where
+  mempty = NoTreasure
 
 {- | Abstractions are less helpful if we can't write functions that
 use them!
@@ -192,7 +220,18 @@ together only different elements.
 Product {getProduct = 6}
 
 -}
-appendDiff3 = error "TODO"
+-- can't generalize to arbitrary number of args (ie, [a]) w/o Monoid constraint I think
+-- (eg, want to foldr but don't know the base case)
+appendDiff3 :: (Eq a, Semigroup a) => a -> a -> a -> a
+appendDiff3 x y z
+  | z /= x && z /= y = appendDiff2 (appendDiff2 x y) z
+  | otherwise        = appendDiff2 x y 
+
+-- despite ScopedTypeVariables, looks like we can still use them as value variables
+appendDiff2 :: (Eq a, Semigroup a) => a -> a -> a
+appendDiff2 a b
+  | a == b    = a
+  | otherwise = a <> b
 
 {-
 
