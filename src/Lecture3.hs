@@ -220,8 +220,7 @@ together only different elements.
 Product {getProduct = 6}
 
 -}
--- can't generalize to arbitrary number of args (ie, [a]) w/o Monoid constraint I think
--- (eg, want to foldr but don't know the base case)
+
 appendDiff3 :: (Eq a, Semigroup a) => a -> a -> a -> a
 appendDiff3 x y z
   | z /= x && z /= y = appendDiff2 (appendDiff2 x y) z
@@ -260,11 +259,34 @@ types that can have such an instance.
   implement instances! No spoilers :)
 -}
 
+-- foldable requires a type to be of kind * -> *
+-- only list1 and treasure are of that kind. the rest have arity 0
+-- I thought that List1 not being a monoid would prevent it from being
+-- foldable, but that isn't actually the case. foldMap creates a monoid
+-- out of the structure using the function passed in (which I guess is obvious)
+
 -- instance Foldable Weekday where
 -- instance Foldable Gold where
 -- instance Foldable Reward where
--- instance Foldable List1 where
--- instance Foldable Treasure where
+
+instance Foldable List1 where
+  foldr :: (a -> b -> b) -> b -> List1 a -> b
+  foldr f b (List1 a []) = f a b
+  foldr f b (List1 a (c:as)) = f a $ foldr f b (List1 c as)
+
+  foldMap :: Monoid m => (a -> m) -> List1 a -> m
+  foldMap f (List1 a []) = f a -- we never need to use mempty
+  foldMap f (List1 a (b:as)) = f a <> foldMap f (List1 b as)
+  
+instance Foldable Treasure where
+  foldr :: (a -> b -> b) -> b -> Treasure a -> b
+  foldr _ b NoTreasure = b
+  foldr f b (SomeTreasure a) = f a b
+  
+  foldMap :: Monoid m => (a -> m) -> Treasure a -> m
+  foldMap _ NoTreasure = mempty
+  foldMap f (SomeTreasure a) = f a 
+    
 
 {-
 
