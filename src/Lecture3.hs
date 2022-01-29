@@ -49,7 +49,7 @@ data Weekday
     | Friday
     | Saturday
     | Sunday
-    deriving (Show, Eq, Enum, Bounded)
+    deriving (Show, Eq)
 
 {- | Write a function that will display only the first three letters
 of a weekday.
@@ -66,6 +66,7 @@ toShortString Friday = "Fri"
 toShortString Saturday = "Sat"
 toShortString Sunday = "Sun"
 -- not sure if this was the intent of this exercise?
+
 
 {- | Write a function that returns next day of the week, following the
 given day.
@@ -93,6 +94,7 @@ next = toEnum . (`mod` size) . (+ 1) . fromEnum
 -- next :: Weekday -> Weekday
 -- next = toEnum . (`mod` max) . (+ 1) . fromEnum
 --   where max = 1 + fromEnum (maxBound :: Weekday)
+
 
 {- | Implement a function that calculates number of days from the first
 weekday to the second.
