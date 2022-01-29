@@ -304,9 +304,16 @@ types that can have such an instance.
 -- instance Functor Weekday where
 -- instance Functor Gold where
 -- instance Functor Reward where
--- instance Functor List1 where
--- instance Functor Treasure where
+instance Functor List1 where
+  fmap :: (a -> b) -> List1 a -> List1 b
+  fmap f (List1 a1 as) = List1 (f a1) (map f as)
 
+instance Functor Treasure where
+  fmap :: (a -> b) -> Treasure a -> Treasure b
+  fmap _ NoTreasure = NoTreasure
+  fmap f (SomeTreasure a) = SomeTreasure (f a)
+
+                 
 {- | Functions are first-class values in Haskell. This means that they
 can be even stored inside other data types as well!
 
@@ -324,4 +331,26 @@ Just [8,9,10]
 [8,20,3]
 
 -}
-apply = error "TODO"
+apply :: Functor t => a -> t (a -> b) -> t b
+apply e f = fmap ($ e) f 
+-- this took me many hours to figure out...and I don't understand why it works
+-- since the first arg to @$@ needs to be a function. does haskell know to treat
+-- @e@ as the second arg based on type? no, that's not it.
+-- oh, it must be related to being an infix operator, given the following types:
+
+-- Prelude> :t ($ 3)
+-- ($ 3) :: Num a => (a -> b) -> b
+-- Prelude> :t (($))
+-- (($)) :: (a -> b) -> a -> b
+-- Prelude> :t (($) 3)
+-- (($) 3) :: Num (a -> b) => a -> b
+-- Prelude> :t (3 $)
+-- (3 $) :: Num (a -> b) => a -> b
+
+-- I wonder how I would write this implementation if @$@ was not infix...
+
+-- btw, I really wanted to be able to pattern match on the higher-kinded type like:
+-- @apply e (T f) = T (f e)@
+-- but I couldn't figure out how to do it / if it is possible
+-- (is it possible?)
+
