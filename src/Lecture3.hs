@@ -57,14 +57,15 @@ of a weekday.
 >>> toShortString Monday
 "Mon"
 -}
-toShortString :: Weekday -> String  
-toShortString Monday = "Mon"
-toShortString Tuesday = "Tue"
-toShortString Wednesday = "Wed"
-toShortString Thursday = "Thu"
-toShortString Friday = "Fri"
-toShortString Saturday = "Sat"
-toShortString Sunday = "Sun"
+toShortString :: Weekday -> String
+toShortString e = take 3 $ show e
+-- toShortString Monday = "Mon"
+-- toShortString Tuesday = "Tue"
+-- toShortString Wednesday = "Wed"
+-- toShortString Thursday = "Thu"
+-- toShortString Friday = "Fri"
+-- toShortString Saturday = "Sat"
+-- toShortString Sunday = "Sun"
 -- not sure if this was the intent of this exercise?
 
 {- | Write a function that returns next day of the week, following the
@@ -87,9 +88,19 @@ Tuesday
   would work for **any** enumeration type in Haskell (e.g. 'Bool',
   'Ordering') and not just 'Weekday'?
 -}
-next :: forall a. (Enum a, Bounded a) => a -> a
-next = toEnum . (`mod` size) . (+ 1) . fromEnum
-  where size = 1 + fromEnum (maxBound :: a)
+
+-- generalized
+next :: forall a. (Enum a, Bounded a, Eq a) => a -> a
+next x = if x == maxBound then minBound else succ x
+
+-- suffices
+--next :: Weekday -> Weekday
+--next Sunday = Monday
+--next e = succ e
+
+-- overcomplicated
+-- next = toEnum . (`mod` size) . (+ 1) . fromEnum
+--   where size = 1 + fromEnum (maxBound :: a)
 -- next :: Weekday -> Weekday
 -- next = toEnum . (`mod` max) . (+ 1) . fromEnum
 --   where max = 1 + fromEnum (maxBound :: Weekday)
