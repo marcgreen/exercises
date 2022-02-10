@@ -49,7 +49,7 @@ data Weekday
     | Friday
     | Saturday
     | Sunday
-    deriving (Show, Eq, Enum, Bounded)
+    deriving (Show, Eq)
 
 {- | Write a function that will display only the first three letters
 of a weekday.
@@ -67,6 +67,7 @@ toShortString e = take 3 $ show e
 -- toShortString Saturday = "Sat"
 -- toShortString Sunday = "Sun"
 -- not sure if this was the intent of this exercise?
+
 
 {- | Write a function that returns next day of the week, following the
 given day.
@@ -104,6 +105,7 @@ next x = if x == maxBound then minBound else succ x
 -- next :: Weekday -> Weekday
 -- next = toEnum . (`mod` max) . (+ 1) . fromEnum
 --   where max = 1 + fromEnum (maxBound :: Weekday)
+
 
 {- | Implement a function that calculates number of days from the first
 weekday to the second.
@@ -161,7 +163,7 @@ instance Semigroup Reward where
   Reward a b <> Reward c d = Reward (a <> c) (b || d)
   
 instance Monoid Reward where
-  mempty = Reward (Gold 0) False
+  mempty = Reward mempty False
 
 
 {- | 'List1' is a list that contains at least one element.
