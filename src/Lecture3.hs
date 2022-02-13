@@ -49,7 +49,7 @@ data Weekday
     | Friday
     | Saturday
     | Sunday
-    deriving (Show, Eq)
+    deriving (Show, Eq, Enum, Bounded)
 
 {- | Write a function that will display only the first three letters
 of a weekday.
@@ -118,7 +118,7 @@ weekday to the second.
 daysTo :: Weekday -> Weekday -> Int
 daysTo firstDay secondDay =
   let
-    size = (fromEnum (maxBound :: Weekday) + 1)
+    size = (fromEnum (maxBound :: Weekday)) + 1
     ringDistance = (fromEnum secondDay) - (fromEnum firstDay) `mod` size
   in
     if ringDistance < 0 -- if it's 1 day behind, it's actually 6 days ahead
@@ -209,9 +209,11 @@ monsters, you should get a combined treasure and not just the first
   declaration.
 -}
 instance Semigroup z => Semigroup (Treasure z) where
-  NoTreasure <> NoTreasure = NoTreasure
-  NoTreasure <> SomeTreasure a = SomeTreasure a
-  SomeTreasure a <> NoTreasure = SomeTreasure a
+  -- NoTreasure <> NoTreasure = NoTreasure
+  -- NoTreasure <> SomeTreasure a = SomeTreasure a
+  -- SomeTreasure a <> NoTreasure = SomeTreasure a
+  NoTreasure <> a = a
+  a <> NoTreasure = a
   SomeTreasure a <> SomeTreasure b = SomeTreasure (a <> b)
 
 instance Semigroup z => Monoid (Treasure z) where
@@ -284,12 +286,14 @@ types that can have such an instance.
 
 instance Foldable List1 where
   foldr :: (a -> b -> b) -> b -> List1 a -> b
-  foldr f b (List1 a []) = f a b
-  foldr f b (List1 a (c:as)) = f a $ foldr f b (List1 c as)
+  foldr f b (List1 a as) = foldr f b (a:as)
+--  foldr f b (List1 a []) = f a b
+--  foldr f b (List1 a (c:as)) = f a $ foldr f b (List1 c as)
 
   foldMap :: Monoid m => (a -> m) -> List1 a -> m
-  foldMap f (List1 a []) = f a -- we never need to use mempty
-  foldMap f (List1 a (b:as)) = f a <> foldMap f (List1 b as)
+  foldMap f (List1 a as) = foldMap f (a:as)
+--  foldMap f (List1 a []) = f a -- we never need to use mempty
+--  foldMap f (List1 a (b:as)) = f a <> foldMap f (List1 b as)
   
 instance Foldable Treasure where
   foldr :: (a -> b -> b) -> b -> Treasure a -> b
@@ -342,7 +346,8 @@ Just [8,9,10]
 
 -}
 apply :: Functor t => a -> t (a -> b) -> t b
-apply e f = fmap ($ e) f 
+apply e c = fmap (\f -> f e) c
+-- apply e f = fmap ($ e) f 
 -- this took me many hours to figure out...and I don't understand why it works
 -- since the first arg to @$@ needs to be a function. does haskell know to treat
 -- @e@ as the second arg based on type? no, that's not it.
