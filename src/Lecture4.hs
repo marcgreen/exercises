@@ -100,6 +100,8 @@ module Lecture4
     , printProductStats
     ) where
 
+import Control.Monad (guard)
+import Data.Char (isSpace)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Semigroup (Max (..), Min (..), Semigroup (..), Sum (..))
 import Text.Read (readMaybe)
@@ -135,8 +137,28 @@ errors. We will simply return an optional result here.
 -}
 
 parseRow :: String -> Maybe Row
-parseRow = error "TODO"
+parseRow s =
+  let
+    v = splitAll ',' s
+  in case v of
+    pS : tS : cS : [] -> do
+      tT <- readMaybe (filter (not . isSpace) tS) :: Maybe TradeType
+      cT <- readMaybe (filter (not . isSpace) cS) :: Maybe Int
+      guard $ cT >= 0
+      Just $ Row pS tT cT
+    otherwise -> Nothing
 
+splitAll :: Char -> String -> [String]
+splitAll c s =
+  let
+    (ele, rest) = span (/= c) s
+  in
+    case (ele, rest) of
+      ([], [])  -> []
+      (e, [])   -> [e]
+      ([], r)   -> splitAll c (tail r) -- tail to skip c
+      otherwise -> ele : splitAll c (tail rest) -- tail to skip c
+      
 {-
 We have almost all we need to calculate final stats in a simple and
 elegant way.
