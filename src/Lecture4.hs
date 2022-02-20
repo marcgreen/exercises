@@ -102,8 +102,10 @@ module Lecture4
 
 import Control.Monad (guard)
 import Data.Char (isSpace)
-import Data.List.NonEmpty (NonEmpty (..))
+import Data.List.NonEmpty (NonEmpty (..), map)
+import Data.Maybe (isNothing, fromJust, mapMaybe)
 import Data.Semigroup (Max (..), Min (..), Semigroup (..), Sum (..))
+import System.Environment
 import Text.Read (readMaybe)
 
 {- In this exercise, instead of writing the entire program from
@@ -146,7 +148,7 @@ parseRow s =
       cT <- readMaybe (filter (not . isSpace) cS) :: Maybe Int
       guard $ cT >= 0
       Just $ Row pS tT cT
-    otherwise -> Nothing
+    _ -> Nothing
 
 splitAll :: Char -> String -> [String]
 splitAll c s =
@@ -154,10 +156,10 @@ splitAll c s =
     (ele, rest) = span (/= c) s
   in
     case (ele, rest) of
-      ([], [])  -> []
-      (e, [])   -> [e]
-      ([], r)   -> splitAll c (tail r) -- tail to skip c
-      otherwise -> ele : splitAll c (tail rest) -- tail to skip c
+      ([], []) -> []
+      (e, [])  -> [e]
+      ([], r)  -> splitAll c (tail r) -- tail to skip c
+      _        -> ele : splitAll c (tail rest) -- tail to skip c
       
 {-
 We have almost all we need to calculate final stats in a simple and
@@ -179,6 +181,11 @@ string.
 If both strings have the same length, return the first one.
 -}
 instance Semigroup MaxLen where
+  (<>) :: MaxLen -> MaxLen -> MaxLen
+  (<>) a b = if lenA < lenB then b else a
+    where
+      lenA = length $ unMaxLen a
+      lenB = length $ unMaxLen b
 
 
 {-
@@ -206,7 +213,13 @@ instance for the 'Stats' type itself.
 -}
 
 instance Semigroup Stats where
-
+  (<>) :: Stats -> Stats -> Stats
+  (<>) (Stats a b c d e f g h i) (Stats a2 b2 c2 d2 e2 f2 g2 h2 i2) =
+    Stats (a <> a2) (b <> b2) (c <> c2) (d <> d2) (e <> e2) (f <> f2) (g <> g2) (h <> h2) (i <> i2)
+-- hmm
+-- just want to pairwise zip the args
+-- could gmappend from Data.Semigroup.Generic work?
+--   (<>) = gmappend
 
 {-
 The reason for having the 'Stats' data type is to be able to convert
@@ -222,7 +235,15 @@ row in the file.
 -}
 
 rowToStats :: Row -> Stats
-rowToStats = error "TODO"
+rowToStats (Row rProduct Buy rCost) = Stats
+  (Sum 1) (Sum $ -1 * rCost) (Max rCost) (Min rCost)
+  Nothing Nothing (Just $ Max rCost) (Just $ Min rCost)
+  (MaxLen rProduct)
+rowToStats (Row rProduct Sell rCost) = Stats
+  (Sum 1) (Sum rCost) (Max rCost) (Min rCost)
+  (Just $ Max rCost) (Just $ Min rCost) Nothing Nothing
+  (MaxLen rProduct)
+-- can this be written in a more readable way?
 
 {-
 Now, after we learned to convert a single row, we can convert a list of rows!
@@ -248,7 +269,9 @@ implement the next task.
 -}
 
 combineRows :: NonEmpty Row -> Stats
-combineRows = error "TODO"
+combineRows rows = sconcat $ Data.List.NonEmpty.map rowToStats rows
+-- is there a way to not need to qualify this map to disambiguate? I thought the
+-- types would make it obvious.
 
 {-
 After we've calculated stats for all rows, we can then pretty-print
@@ -259,7 +282,19 @@ you can return string "no value"
 -}
 
 displayStats :: Stats -> String
-displayStats = error "TODO"
+displayStats stats = unlines [
+  "Total positions:       : " ++ show (getSum $ statsTotalPositions stats),
+  "Total final balance    : " ++ show (getSum $ statsTotalSum stats),
+  "Biggest absolute cost  : " ++ show (getMax $ statsAbsoluteMax stats),
+  "Smallest absolute cost : " ++ show (getMin $ statsAbsoluteMin stats),
+  "Max earning            : " ++ showMaybe getMax (statsSellMax stats),
+  "Min earning            : " ++ showMaybe getMin (statsSellMin stats),
+  "Max spending           : " ++ showMaybe getMax (statsBuyMax stats),
+  "Min spending           : " ++ showMaybe getMin (statsBuyMin stats),
+  "Longest product name   : " ++ unMaxLen (statsLongest stats)
+  ]
+  where
+    showMaybe = \fn m -> if isNothing m then "no value" else show $ fn $ fromJust m
 
 {-
 Now, we definitely have all the pieces in places! We can write a
@@ -279,8 +314,13 @@ the file doesn't have any products.
 -}
 
 calculateStats :: String -> String
-calculateStats = error "TODO"
-
+calculateStats file =
+  let
+    rows = mapMaybe parseRow $ lines file
+  in case rows of
+    []      -> "file has no products"
+    a : as  -> displayStats . combineRows $ a :| as
+                      
 {- The only thing left is to write a function with side-effects that
 takes a path to a file, reads its content, calculates stats and prints
 the result.
@@ -289,7 +329,7 @@ Use functions 'readFile' and 'putStrLn' here.
 -}
 
 printProductStats :: FilePath -> IO ()
-printProductStats = error "TODO"
+printProductStats path = readFile path >>= putStrLn . calculateStats
 
 {-
 Okay, I lied. This is not the last thing. Now, we need to wrap
@@ -304,8 +344,13 @@ CLI args:
 https://hackage.haskell.org/package/base-4.16.0.0/docs/System-Environment.html#v:getArgs
 -}
 
+
 main :: IO ()
-main = error "TODO"
+main = do
+  args <- getArgs
+  case args of
+    [path] -> printProductStats path
+    _      -> putStrLn "usage: pass the path to the file as the only argument"
 
 
 {-
