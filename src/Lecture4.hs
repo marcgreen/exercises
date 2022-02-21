@@ -1,3 +1,6 @@
+{-# LANGUAGE StrictData #-}
+{-# LANGUAGE BangPatterns #-}
+
 {- |
 Module                  : Lecture4
 Copyright               : (c) 2021-2022 Haskell Beginners 2022 Course
@@ -102,9 +105,11 @@ module Lecture4
 
 import Control.Monad (guard)
 import Data.Char (isSpace)
+import Data.List (foldl1')
 import Data.List.NonEmpty (NonEmpty (..), map)
 import Data.Maybe (isNothing, fromJust, mapMaybe)
 import Data.Semigroup (Max (..), Min (..), Semigroup (..), Sum (..))
+import Prelude 
 import System.Environment
 import Text.Read (readMaybe)
 
@@ -215,11 +220,17 @@ instance for the 'Stats' type itself.
 instance Semigroup Stats where
   (<>) :: Stats -> Stats -> Stats
   (<>) (Stats a b c d e f g h i) (Stats a2 b2 c2 d2 e2 f2 g2 h2 i2) =
-    Stats (a <> a2) (b <> b2) (c <> c2) (d <> d2) (e <> e2) (f <> f2) (g <> g2) (h <> h2) (i <> i2)
+    Stats (a <> a2) (b <> b2) (c <> c2) (d <> d2) (c' e e2) (c' f f2) (c' g g2) (c' h h2) (i <> i2)
 -- hmm
 -- just want to pairwise zip the args
 -- could gmappend from Data.Semigroup.Generic work?
 --   (<>) = gmappend
+
+c' :: Semigroup a => Maybe a -> Maybe a -> Maybe a
+c' a Nothing = a
+c' Nothing a2 = a2
+c' (Just !a) (Just !a2) = Just $ a <> a2
+-- doesn't look like I need to make strict the first two pattern matches here (on Nothings).
 
 {-
 The reason for having the 'Stats' data type is to be able to convert
@@ -243,7 +254,7 @@ rowToStats (Row rProduct Sell rCost) = Stats
   (Sum 1) (Sum rCost) (Max rCost) (Min rCost)
   (Just $ Max rCost) (Just $ Min rCost) Nothing Nothing
   (MaxLen rProduct)
--- can this be written in a more readable way?
+-- can this be written in a more readable & maintainable way?
 
 {-
 Now, after we learned to convert a single row, we can convert a list of rows!
@@ -269,7 +280,8 @@ implement the next task.
 -}
 
 combineRows :: NonEmpty Row -> Stats
-combineRows rows = sconcat $ Data.List.NonEmpty.map rowToStats rows
+combineRows (row:|rows) = foldl1' (<>) $ Prelude.map rowToStats (row:rows)
+--combineRows rows = sconcat $ Data.List.NonEmpty.map rowToStats rows
 -- is there a way to not need to qualify this map to disambiguate? I thought the
 -- types would make it obvious.
 
@@ -314,9 +326,9 @@ the file doesn't have any products.
 -}
 
 calculateStats :: String -> String
-calculateStats file =
+calculateStats fileContents =
   let
-    rows = mapMaybe parseRow $ lines file
+    rows = mapMaybe parseRow $ lines fileContents
   in case rows of
     []      -> "file has no products"
     a : as  -> displayStats . combineRows $ a :| as
