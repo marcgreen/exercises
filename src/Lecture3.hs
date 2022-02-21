@@ -71,7 +71,6 @@ toShortString e = take 3 $ show e
 -- toShortString Sunday = "Sun"
 -- not sure if this was the intent of this exercise?
 
-
 {- | Write a function that returns next day of the week, following the
 given day.
 
@@ -108,7 +107,6 @@ next x = if x == maxBound then minBound else succ x
 -- next :: Weekday -> Weekday
 -- next = toEnum . (`mod` max) . (+ 1) . fromEnum
 --   where max = 1 + fromEnum (maxBound :: Weekday)
-
 
 {- | Implement a function that calculates number of days from the first
 weekday to the second.
