@@ -60,6 +60,7 @@ of a weekday.
 >>> toShortString Monday
 "Mon"
 -}
+
 toShortString :: Weekday -> String
 toShortString e = take 3 $ show e
 -- toShortString Monday = "Mon"
